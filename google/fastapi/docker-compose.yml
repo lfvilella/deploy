@@ -1,0 +1,42 @@
+version: "3.7"
+
+services:
+  datastore:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    ports:
+      - "8081"
+    networks:
+      - database-network
+    stdin_open: true
+    tty: true
+    command: "gcloud beta emulators datastore start --host-port 0.0.0.0:8081"
+    environment:
+      CLOUDSDK_CORE_PROJECT: test
+
+  backend:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    ports:
+      - "8082:8080"
+    depends_on:
+      - datastore
+    links:
+      - datastore:datastore_local
+    volumes:
+      - ./:/app
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    command: "/bin/bash"
+    # command: "dev_appserver.py app_dev.yaml --host 0.0.0.0 --port 8080 --support_datastore_emulator=true --enable_console --env_var DATASTORE_EMULATOR_HOST=datastore_local:8081"
+    networks:
+      - database-network
+    environment:
+      CLOUDSDK_CORE_PROJECT: test
+
+
+networks:
+  database-network:
